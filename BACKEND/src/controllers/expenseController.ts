@@ -28,7 +28,10 @@ export const createExpense: RequestHandler = async (req, res) => {
 
 export const getExpenses: RequestHandler = async (req, res) => {
     try {
-        const expenses = await Expense.find({ userId: req.query.userId });
+        const { userId } = req.query;
+
+        const expenses = await Expense.find({ userId }).populate('userId', 'name email');
+
         res.json(expenses);
     } catch (error) {
         console.error('Error fetching expenses:', error);

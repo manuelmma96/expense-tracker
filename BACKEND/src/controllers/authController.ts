@@ -31,10 +31,10 @@ export const login: RequestHandler = async (req, res) => {
 
         if (!user || !(await user.comparePassword(password))) {
             res.status(401).json({ message: 'Invalid credentials' });
-            return;
+
         }
 
-        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'secret', {
+        const token = jwt.sign({ id: user?._id }, process.env.JWT_SECRET || 'secret', {
             expiresIn: '1h',
         });
 

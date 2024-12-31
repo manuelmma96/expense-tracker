@@ -1,6 +1,7 @@
 import { RequestHandler } from 'express';
 import Expense from '../models/Expense';
 import mongoose from "mongoose";
+import User from '../models/User';
 
 export const createExpense: RequestHandler = async (req, res) => {
     try {
@@ -9,6 +10,11 @@ export const createExpense: RequestHandler = async (req, res) => {
         if (!mongoose.Types.ObjectId.isValid(userId)) {
             res.status(400).json({ error: 'Invalid userId. Must be a valid MongoDB ObjectId.' });
             return;
+        }
+
+        const userExists = await User.findById(userId);
+        if (!userExists) {
+            res.status(404).json
         }
 
         const expense = await Expense.create({

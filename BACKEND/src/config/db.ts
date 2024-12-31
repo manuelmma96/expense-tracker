@@ -5,10 +5,10 @@ dotenv.config();
 
 const connectDB = async () => {
     try {
-        await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/expense-tracker');
-        console.log('MongoDB connected successfully');
-    } catch (err) {
-        console.error('MongoDB connection error:', err);
+        const conn = await mongoose.connect(process.env.MONGO_URI || '');
+        console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+    } catch (error) {
+        console.error('❌ MongoDB Connection Error:', error);
         process.exit(1);
     }
 };

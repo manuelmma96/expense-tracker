@@ -1,5 +1,5 @@
 import { RequestHandler } from 'express';
-import User from '../models/User';
+import User, { IUser } from '../models/User';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 
@@ -27,14 +27,14 @@ export const register: RequestHandler = async (req, res) => {
 export const login: RequestHandler = async (req, res) => {
     try {
         const { email, password } = req.body;
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ email }) as IUser | null;
 
         if (!user || !(await user.comparePassword(password))) {
             res.status(401).json({ message: 'Invalid credentials' });
-
+            return;
         }
 
-        const token = jwt.sign({ id: user?._id }, process.env.JWT_SECRET || 'secret', {
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'secret', {
             expiresIn: '1h',
         });
 

@@ -14,7 +14,7 @@ export const createTransaction: RequestHandler = async (req, res, next): Promise
 
         const user = await User.findById(userId);
         if (!user) {
-            res.status(404).json({ error: 'User not found. Cannot create a transaction.' });
+            res.status(404).json({ error: 'User not found. Cannot create a transaction for a non-existent user.' });
             return;
         }
 
@@ -36,7 +36,8 @@ export const createTransaction: RequestHandler = async (req, res, next): Promise
         next(error);
     }
 };
-export const getTransactions: RequestHandler = async (req, res) => {
+
+export const getTransactions: RequestHandler = async (req, res, next): Promise<void> => {
     try {
         const { userId } = req.query;
 
@@ -47,12 +48,11 @@ export const getTransactions: RequestHandler = async (req, res) => {
         const transactions = await Transaction.find({ userId }).sort({ date: -1 });
         res.json(transactions);
     } catch (error) {
-        console.error('Error fetching transactions:', error);
-        res.status(500).json({ error: 'Failed to fetch transactions' });
+        next(error);
     }
 };
 
-export const updateTransaction: RequestHandler = async (req, res) => {
+export const updateTransaction: RequestHandler = async (req, res, next): Promise<void> => {
     try {
         const { id } = req.params;
         const { date, category, amount, description } = req.body;
@@ -81,26 +81,41 @@ export const updateTransaction: RequestHandler = async (req, res) => {
     } catch (error) {
         console.error('Error updating transaction:', error);
         res.status(500).json({ error: 'Failed to update transaction' });
+        next(error);
     }
 };
 
-export const deleteTransaction: RequestHandler = async (req, res) => {
+export const deleteTransaction: RequestHandler = async (req, res, next): Promise<void> => {
     try {
         const { id } = req.params;
+        const { userId } = req.query;
 
-        const transaction = await Transaction.findByIdAndDelete(id);
+        // Validate transaction existence
+        const transaction = await Transaction.findById(id);
         if (!transaction) {
             res.status(404).json({ error: 'Transaction not found.' });
             return;
         }
 
+        if (!userId) {
+            res.status(400).json({ error: 'userId query parameter is required for ownership validation.' });
+        }
+
+        if (transaction.userId.toString() !== userId) {
+            res.status(403).json({ error: 'Unauthorized: Transaction does not belong to the specified user.' });
+        }
+
+        await Transaction.findByIdAndDelete(id);
+
         await User.findByIdAndUpdate(transaction.userId, {
-            $inc: { 'transactionSummary.totalSpent': -transaction.amount, 'transactionSummary.transactionCount': -1 },
+            $inc: {
+                'transactionSummary.totalSpent': -transaction.amount,
+                'transactionSummary.transactionCount': -1
+            }
         });
 
         res.json({ message: 'Transaction deleted successfully' });
     } catch (error) {
-        console.error('Error deleting transaction:', error);
-        res.status(500).json({ error: 'Failed to delete transaction' });
+        next(error);
     }
 };
